@@ -43,6 +43,16 @@ const EXTRAS = (over: Partial<HttpToolHostExtras> = {}): HttpToolHostExtras => (
 afterEach(() => _resetProjectionRegistryForTests());
 
 describe('handleHttpToolRequest (standalone — no host policies)', () => {
+  it('passes only a host-owned idempotency key into the tool context', async () => {
+    const keys: unknown[] = [];
+    registerProjectedTool(makeTool({ fn: async (_input, ctx) => {
+      keys.push(ctx.idempotencyKey);
+      return { content: [{ type: 'text', text: 'ok' }] };
+    } }));
+    await handleHttpToolRequest(REQ({ idempotencyKey: 'phone-write', headers: { 'idempotency-key': 'untrusted' } }), EXTRAS());
+    await handleHttpToolRequest(REQ({ headers: { 'idempotency-key': 'untrusted' } }), EXTRAS());
+    expect(keys).toEqual(['phone-write', undefined]);
+  });
   it('dispatches a tool and returns 200 + content', async () => {
     registerProjectedTool(makeTool());
     const res = await handleHttpToolRequest(REQ(), EXTRAS());

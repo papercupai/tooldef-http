@@ -140,6 +140,8 @@ export interface HttpToolRequest {
   searchParams: URLSearchParams;
   headers: Record<string, string | undefined>;
   body: unknown;
+  /** Host-supplied logical write key; never derived from an inbound header. */
+  idempotencyKey?: string;
 }
 
 export interface HttpToolResponse {
@@ -357,6 +359,7 @@ async function resolveToolAndContext(
     },
     emit: noopEmit,
     transport: 'http',
+    ...(req.idempotencyKey ? { idempotencyKey: req.idempotencyKey } : {}),
     // Result-format negotiation (P-008): explicit `?format=` wins over the
     // `Accept` MIME type. Parsed by the result serializer; unrecognized values
     // fall through to the HTTP transport default (lossless JSON).
